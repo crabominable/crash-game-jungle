@@ -1,10 +1,10 @@
-import { Controller, Get } from "@nestjs/common";
-import type { HealthCheckResponse } from "@crash/contracts";
+import type { HealthCheckResponse } from "@crash/contracts"
+import { Controller, Get } from "@nestjs/common"
 
 @Controller()
 export class WalletsController {
   @Get("health")
   check(): HealthCheckResponse {
-    return { status: "ok", service: "wallets" };
+    return { status: "ok", service: "wallets" }
   }
 }
