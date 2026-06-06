@@ -143,7 +143,7 @@ Seriam escolhas validas, mas trocariam uma base pronta por configuracao externa 
 - bom encaixe com `TanStack Query`
 - boa ergonomia para uma UI que mistura leitura REST, autenticacao e atualizacao em tempo real
 
-Ele tambem conversa com a preferencia explicita do enunciado e com a stack da empresa.
+Ele tambem conversa com a preferencia explicita do enunciado e com a stack da empresa, o que faz a decisao ficar mais facil de defender.
 
 #### Por que `TanStack Start` em vez de `Next.js`
 
@@ -237,10 +237,6 @@ Esta stack foi escolhida para maximizar 5 coisas:
 ## Decisoes Estruturais e Arquiteturais
 
 Esta secao existe para explicar melhor algumas decisoes de implementacao que nao sao apenas "qual tecnologia escolhi", mas sim "como organizei o codigo para que a stack continue clara e segura".
-
-## Arquivos iniciais no frontend gerado pelo TanStack Start
-
-Documentação de referência: https://tanstack.com/start/latest/docs/framework/react/build-from-scratch
 
 ### Por que `wallets` veio antes de `games`
 
@@ -403,3 +399,212 @@ Testes de `application` verificam se os casos de uso coordenam bem o dominio e o
 - devolve snapshots consistentes
 
 Essa separacao deixa o feedback mais claro. Quando algo quebra, fica mais facil saber se o problema esta na regra principal ou na forma como ela esta sendo orquestrada.
+
+### Por que `games` veio depois de `wallets`
+
+O dominio de `games` foi implementado depois de `wallets` porque o jogo depende de uma autoridade monetaria para ser honesto.
+
+Sem isso, o servico de jogo poderia cair em atalhos ruins, como:
+
+- fingir que uma aposta ja esta ativa sem debito confirmado
+- fingir que um cashout ja virou ganho sem credito liquidado
+- misturar regra de rodada com regra de saldo
+
+Ao fazer `wallets` primeiro, o `games` ja nasce sabendo que o dinheiro mora do outro lado. Isso melhora a modelagem e tambem deixa a progressao dos commits mais logica.
+
+### Por que a entidade `Round` virou o coracao do dominio
+
+No `games`, o equivalente do `wallet.ts` e o `round.ts`.
+
+Ele foi tratado como o centro do bounded context porque e ali que mora a verdade sobre:
+
+- quando a rodada aceita apostas
+- quando a rodada comeca
+- quando ela crasha
+- quando um cashout pode ser aceito
+- quando uma aposta esta ativa, perdida ou pendente de carteira
+
+Em outras palavras: em vez de espalhar a regra da rodada por varios services ou controllers, o projeto concentra a logica principal em um lugar pequeno, legivel e testavel.
+
+### Por que a rodada e as apostas ganharam estados explicitos
+
+Uma das decisoes mais importantes desse commit foi modelar estados de forma explicita, tanto para a rodada quanto para a aposta.
+
+Estados da rodada:
+
+- `betting_open`
+- `in_progress`
+- `crashed`
+- `settled`
+
+Estados da aposta:
+
+- `bet_pending_wallet`
+- `bet_active`
+- `bet_rejected_by_wallet`
+- `cashout_pending_wallet`
+- `cashout_settlement_pending_or_failed`
+- `won_settled`
+- `lost`
+
+Isso foi escolhido porque o sistema precisa ser honesto sobre o que ja aconteceu e o que ainda esta pendente. Em arquitetura distribuida, dizer "ganhou" ou "apostou" cedo demais e uma forma de mentir sobre o estado real do sistema.
+
+### Por que existe a ideia de `pending wallet settlement`
+
+O ponto mais importante do momento atual e justamente esse: o `games` sabe separar "o jogo aceitou" de "a carteira liquidou".
+
+Exemplos:
+
+- uma aposta nasce como `bet_pending_wallet` e so depois vira `bet_active`
+- um cashout nasce como `cashout_pending_wallet` e so depois vira `won_settled`
+
+Essa decisao veio antes de `RabbitMQ` porque o dominio ja precisava saber representar a verdade do fluxo antes mesmo da integracao completa existir. Assim, quando o broker entrar, ele vai completar um desenho que ja era honesto, e nao corrigir uma modelagem falsa.
+
+### Por que `crashed` e diferente de `settled`
+
+Outra decisao importante foi nao tratar crash como fim automatico da rodada.
+
+`crashed` quer dizer:
+
+- o evento principal da rodada aconteceu
+- quem nao saiu a tempo perdeu
+
+Mas isso ainda nao garante que a parte financeira terminou. Pode continuar existindo:
+
+- debito de aposta ainda pendente
+- cashout aceito esperando credito
+- confirmacao tardia chegando depois do crash
+
+Por isso existe `settled`: ele so aparece quando nao resta mais pendencia financeira relevante. Essa separacao deixa o fluxo muito mais confiavel.
+
+### Por que existe reconciliacao tardia
+
+Em sistemas assincronos, as respostas nao chegam sempre na ordem perfeita. O Commit 4 foi desenhado ja considerando isso.
+
+Exemplo:
+
+- a rodada crasha
+- depois disso chega uma confirmacao tardia do debito
+- ou chega uma confirmacao tardia de credito depois de uma falha anterior
+
+O dominio precisa saber se reconciliar com esses atrasos sem quebrar o estado. Essa foi uma escolha de maturidade: o projeto nao assume uma orquestracao idealizada onde tudo sempre chega no instante certo.
+
+### Por que `calculatePayoutMinor` fica no dominio
+
+O calculo do payout foi mantido junto do dominio da rodada porque ele faz parte da semantica do jogo.
+
+O `games` decide:
+
+- qual multiplicador foi aceito
+- qual payout isso representa
+
+O `wallets` depois aplica exatamente o valor inteiro que receber. Essa divisao e importante porque:
+
+- o jogo conhece a regra do cashout
+- a carteira conhece o saldo e o ledger
+
+Cada servico fica responsavel pelo que lhe pertence.
+
+### Por que os casos de uso do `games` foram quebrados em varios services pequenos
+
+Em vez de um service gigante fazendo tudo, o Commit 4 criou varios casos de uso pequenos:
+
+- `create-round`
+- `start-round`
+- `place-bet`
+- `accept-cashout`
+- `crash-round`
+- `confirm-bet-debit`
+- `reject-bet-debit`
+- `confirm-cashout-credit`
+- `reject-cashout-credit`
+- `get-current-round`
+
+Isso foi escolhido porque cada acao tem semantica propria. Separar em varios services deixa mais claro:
+
+- o que cada comando faz
+- qual estado ele altera
+- qual comportamento os testes precisam provar
+
+### Por que o `RoundRepository` continua abstrato
+
+Assim como no `wallets`, o repositorio do `games` foi mantido como contrato e nao como detalhe concreto acoplado ao dominio.
+
+Ele define o minimo necessario para o servico funcionar:
+
+- criar rodada atual
+- obter rodada atual
+- salvar rodada atual
+
+Isso permite que a regra da rodada seja desenvolvida e testada sem depender cedo demais de banco real ou broker.
+
+### Por que comecar com `InMemoryRoundRepository`
+
+A persistencia em memoria foi usada aqui pelo mesmo motivo do `wallets`: ordem de implementacao.
+
+O objetivo inicial nao e provar banco, fila ou API completa. E provar:
+
+- modelagem da rodada
+- transicoes de estado
+- cashout
+- crash
+- reconciliacao
+
+Se banco e integracao real entrassem nesse ponto, o commit ficaria grande demais e a leitura principal do incremento se perderia.
+
+### Por que o controller continua simples tambem no `games`
+
+Mesmo com o dominio de `games` muito mais rico, o controller ainda foi mantido praticamente como uma porta de `health`.
+
+Essa foi uma decisao de atomicidade. Antes de abrir a API publica de aposta, cashout e historico, o projeto precisava garantir que:
+
+- a rodada sabe se comportar
+- os estados pendentes existem
+- a reconciliacao funciona
+
+So depois faria sentido colocar `Kong`, auth, contratos REST e `WebSocket` por cima. Isso evita misturar "miolo do jogo" com "borda publica" no mesmo commit.
+
+### Por que o `AppModule` do `games` ficou maior
+
+O `AppModule` cresce neste commit porque o servico passou a ter muito mais pecas reais:
+
+- casos de uso
+- repositorio
+- controller
+- injecao do contrato `ROUND_REPOSITORY`
+
+Ele funciona como a lista de montagem do servico. Em vez de deixar a construcao espalhada e implicita, o modulo registra claramente quais partes existem e como elas se conectam.
+
+### Por que existe `round.snapshot`
+
+O `round.snapshot.ts` cumpre para o `games` o mesmo papel que `wallet.snapshot.ts` cumpre para o `wallets`: tirar uma foto organizada da entidade para o resto do sistema consumir.
+
+Isso ajuda porque a entidade interna trabalha com:
+
+- `bigint`
+- detalhes ricos de aposta
+- campos de estado e reconciliacao
+
+Ja os testes e a camada de aplicacao preferem uma representacao mais previsivel, especialmente para comparar resultados e expor dados sem vazar detalhes internos do dominio.
+
+### Por que testar `domain` e `application` separados tambem no `games`
+
+No `games`, essa separacao ficou ainda mais importante porque ha muita transicao de estado.
+
+Testes de `domain` verificam se a rodada sabe se comportar:
+
+- aceita e rejeita aposta na hora certa
+- aceita ou rejeita cashout
+- crasha corretamente
+- reconcilia pendencias
+- fecha como `settled` so quando pode
+
+Testes de `application` verificam se os casos de uso orquestram o dominio corretamente:
+
+- criar rodada atual
+- mover aposta de pendente para ativa
+- marcar cashout como pendente
+- reconciliar depois do crash
+- permitir nova rodada depois da anterior estar encerrada
+
+Essa divisao deixa os testes mais explicativos e ajuda a encontrar rapidamente se o problema esta na regra principal ou na forma como ela esta sendo usada.
