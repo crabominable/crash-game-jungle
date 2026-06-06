@@ -143,7 +143,7 @@ Seriam escolhas validas, mas trocariam uma base pronta por configuracao externa 
 - bom encaixe com `TanStack Query`
 - boa ergonomia para uma UI que mistura leitura REST, autenticacao e atualizacao em tempo real
 
-Ele tambem conversa com a preferencia explicita do enunciado e com a stack da empresa, o que faz a decisao ficar mais facil de defender.
+Ele tambem conversa com a preferencia explicita do enunciado e com a stack da empresa.
 
 #### Por que `TanStack Start` em vez de `Next.js`
 
@@ -237,6 +237,10 @@ Esta stack foi escolhida para maximizar 5 coisas:
 ## Decisoes Estruturais e Arquiteturais
 
 Esta secao existe para explicar melhor algumas decisoes de implementacao que nao sao apenas "qual tecnologia escolhi", mas sim "como organizei o codigo para que a stack continue clara e segura".
+
+## Arquivos iniciais no frontend gerado pelo TanStack Start
+
+Documentação de referência: https://tanstack.com/start/latest/docs/framework/react/build-from-scratch
 
 ### Por que `wallets` veio antes de `games`
 
