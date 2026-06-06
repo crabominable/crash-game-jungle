@@ -6,9 +6,11 @@
     "dev": "bun run --watch src/main.ts",
     "start": "bun run src/main.ts",
     "test": "bun test tests/unit",
-    "test:e2e": "bun test tests/e2e"
+    "test:e2e": "bun test tests/e2e",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@crash/contracts": "workspace:*",
     "@nestjs/common": "^11.1.17",
     "@nestjs/core": "^11.1.17",
     "@nestjs/platform-express": "^11.1.17",
@@ -16,6 +18,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@types/node": "^25.9.2",
     "bun-types": "latest",
     "typescript": "^5.8.3"
   }

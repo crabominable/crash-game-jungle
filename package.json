@@ -7,9 +7,15 @@
     "frontend"
   ],
   "scripts": {
+    "check": "bun run typecheck && bun run --cwd frontend build",
     "docker:up": "docker compose up",
     "docker:down": "docker compose down",
-    "docker:prune": "docker compose down -v --rmi all --remove-orphans && docker volume prune -f"
+    "docker:prune": "docker compose down -v --rmi all --remove-orphans && docker volume prune -f",
+    "typecheck": "bun run typecheck:contracts && bun run typecheck:games && bun run typecheck:wallets && bun run typecheck:frontend",
+    "typecheck:contracts": "bun run --cwd packages/contracts typecheck",
+    "typecheck:frontend": "bun run --cwd frontend typecheck",
+    "typecheck:games": "bun run --cwd services/games typecheck",
+    "typecheck:wallets": "bun run --cwd services/wallets typecheck"
   },
   "devDependencies": {
     "bun-types": "latest"
