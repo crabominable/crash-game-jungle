@@ -10,7 +10,10 @@ import { RabbitMqWalletsSettlementIntegration } from "./infrastructure/messaging
 import { InMemoryWalletRepository } from "./infrastructure/persistence/in-memory-wallet.repository"
 import { WalletsController } from "./presentation/controllers/wallets.controller"
 
+import { AuthModule } from "./infrastructure/auth/auth.module"
+
 @Module({
+  imports: [AuthModule],
   controllers: [WalletsController],
   providers: [
     CreateWalletService,

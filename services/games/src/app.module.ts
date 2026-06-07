@@ -23,7 +23,10 @@ import { RabbitMqGamesSettlementIntegration } from "./infrastructure/messaging/r
 import { InMemoryRoundRepository } from "./infrastructure/persistence/in-memory-round.repository"
 import { GamesController } from "./presentation/controllers/games.controller"
 
+import { AuthModule } from "./infrastructure/auth/auth.module"
+
 @Module({
+  imports: [AuthModule],
   controllers: [GamesController],
   providers: [
     AcceptCashoutService,
