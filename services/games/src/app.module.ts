@@ -5,11 +5,21 @@ import { ConfirmCashoutCreditService } from "./application/confirm-cashout-credi
 import { CrashRoundService } from "./application/crash-round.service"
 import { CreateRoundService } from "./application/create-round.service"
 import { GetCurrentRoundService } from "./application/get-current-round.service"
+import { HandleBetDebitConfirmedEventService } from "./application/handle-bet-debit-confirmed-event.service"
+import { HandleBetDebitRejectedEventService } from "./application/handle-bet-debit-rejected-event.service"
+import { HandleCashoutCreditConfirmedEventService } from "./application/handle-cashout-credit-confirmed-event.service"
+import { HandleCashoutCreditRejectedEventService } from "./application/handle-cashout-credit-rejected-event.service"
 import { PlaceBetService } from "./application/place-bet.service"
 import { RejectBetDebitService } from "./application/reject-bet-debit.service"
 import { RejectCashoutCreditService } from "./application/reject-cashout-credit.service"
 import { ROUND_REPOSITORY } from "./application/round.repository"
+import {
+  RequestBetDebitSettlementService,
+  RequestCashoutCreditSettlementService,
+  SETTLEMENT_EVENT_PUBLISHER,
+} from "./application/settlement-events.publisher"
 import { StartRoundService } from "./application/start-round.service"
+import { RabbitMqGamesSettlementIntegration } from "./infrastructure/messaging/rabbitmq-games-settlement.integration"
 import { InMemoryRoundRepository } from "./infrastructure/persistence/in-memory-round.repository"
 import { GamesController } from "./presentation/controllers/games.controller"
 
@@ -22,14 +32,25 @@ import { GamesController } from "./presentation/controllers/games.controller"
     CrashRoundService,
     CreateRoundService,
     GetCurrentRoundService,
+    HandleBetDebitConfirmedEventService,
+    HandleBetDebitRejectedEventService,
+    HandleCashoutCreditConfirmedEventService,
+    HandleCashoutCreditRejectedEventService,
     PlaceBetService,
     RejectBetDebitService,
     RejectCashoutCreditService,
+    RequestBetDebitSettlementService,
+    RequestCashoutCreditSettlementService,
     StartRoundService,
+    RabbitMqGamesSettlementIntegration,
     InMemoryRoundRepository,
     {
       provide: ROUND_REPOSITORY,
       useExisting: InMemoryRoundRepository,
+    },
+    {
+      provide: SETTLEMENT_EVENT_PUBLISHER,
+      useExisting: RabbitMqGamesSettlementIntegration,
     },
   ],
 })
