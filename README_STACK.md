@@ -618,3 +618,17 @@ O Commit 5 (test: prove payout truncation and wallet settlement idempotency) adi
 2. **Idempotencia de Liquidacao (Wallet Settlement Idempotency):** Como o sistema usara mensageria assincrona (RabbitMQ), existe a possibilidade real de uma mensagem ser entregue duas vezes (semantica *at-least-once*). Esses testes garantem que se o broker engasgar e a ordem de debito/credito com o mesmo correlationId chegar repetida, a carteira nao cobrara ou pagara duas vezes, preservando o ledger auditavel.
 
 Essa prova antecipada demonstra que o coracao financeiro esta matematicamente blindado antes mesmo de abri-lo para conexoes externas.
+
+### Por que adotar RabbitMQ e Consistencia Eventual (Commit 6)
+
+O Commit 6 (feat(integration): settle bets asynchronously through RabbitMQ) introduziu a comunicacao via broker para integrar os microsservicos, rejeitando o padrao de chamadas HTTP sincronas diretas.
+
+As mudancas estruturais implementadas foram:
+
+1. **Desacoplamento via Publishers:** No servico games, operacoes criticas como Apostar (PlaceBetService) e Cashout passaram a emitir mensagens (wallet.debit.request e wallet.credit.request) para o RabbitMQ, acompanhadas de um correlationId. A entidade salva seu estado puramente como pendente (et_pending_wallet) e o fluxo da aplicacao segue sem travar aguardando resposta de rede.
+
+2. **Processamento em Consumers (Listeners):**
+- No wallets, controllers de mensageria foram criados (com @EventPattern) para sugar as requisicoes da fila. Ele processa o debito ou credito e, ao final, publica um novo evento na via de mao dupla: wallet.debit.confirmed ou wallet.debit.rejected.
+- No games, outro listener consome essas confirmacoes. Ao receber um confirmed, o estado da aposta evolui de et_pending_wallet para et_active, completando o ciclo.
+
+3. **Resiliencia e Tolerancia a Falhas:** Este padrao de Eventual Consistency garante que, caso o servico wallets sofra uma queda abrupta, o jogo nao apresente falhas ou perca apostas. As mensagens ficam armazenadas na fila do RabbitMQ e sao processadas retroativamente no momento em que a conexao e reestabelecida, reconciliando o saldo final perfeitamente.
