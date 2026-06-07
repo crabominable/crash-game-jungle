@@ -14,14 +14,15 @@ import { InMemoryRoundRepository } from "../../../src/infrastructure/persistence
 describe("Round settlement application services", () => {
   test("marks the round as settled after crash once the last pending cashout is confirmed", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
-    const acceptCashout = new AcceptCashoutService(repository)
-    const crashRound = new CrashRoundService(repository)
-    const confirmCashoutCredit = new ConfirmCashoutCreditService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const acceptCashout = new AcceptCashoutService(repository, mockPublisher)
+    const crashRound = new CrashRoundService(repository, mockPublisher)
+    const confirmCashoutCredit = new ConfirmCashoutCreditService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       crashMultiplierBasisPoints: 15_500,
@@ -69,12 +70,13 @@ describe("Round settlement application services", () => {
 
   test("settles the round after crash when the final pending wallet debit is rejected", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const startRound = new StartRoundService(repository)
-    const crashRound = new CrashRoundService(repository)
-    const rejectBetDebit = new RejectBetDebitService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const crashRound = new CrashRoundService(repository, mockPublisher)
+    const rejectBetDebit = new RejectBetDebitService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       crashMultiplierBasisPoints: 15_500,
@@ -112,15 +114,16 @@ describe("Round settlement application services", () => {
 
   test("reconciles a late cashout credit confirmation after a prior failure state", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
-    const acceptCashout = new AcceptCashoutService(repository)
-    const crashRound = new CrashRoundService(repository)
-    const rejectCashoutCredit = new RejectCashoutCreditService(repository)
-    const confirmCashoutCredit = new ConfirmCashoutCreditService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const acceptCashout = new AcceptCashoutService(repository, mockPublisher)
+    const crashRound = new CrashRoundService(repository, mockPublisher)
+    const rejectCashoutCredit = new RejectCashoutCreditService(repository, mockPublisher)
+    const confirmCashoutCredit = new ConfirmCashoutCreditService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       crashMultiplierBasisPoints: 15_500,

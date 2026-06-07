@@ -10,12 +10,13 @@ import { InMemoryRoundRepository } from "../../../src/infrastructure/persistence
 describe("Games money invariants", () => {
   test("exposes payout already truncated down before wallet credit is requested", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
-    const acceptCashout = new AcceptCashoutService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const acceptCashout = new AcceptCashoutService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       roundId: "round-1",

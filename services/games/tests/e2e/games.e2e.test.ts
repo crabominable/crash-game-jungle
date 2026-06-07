@@ -24,7 +24,7 @@ describe("GamesController (e2e)", () => {
       .compile()
 
     app = moduleFixture.createNestApplication()
-    await app.init()
+    await app.listen(0)
   })
 
   afterAll(async () => {
@@ -56,5 +56,27 @@ describe("GamesController (e2e)", () => {
       payoutMultiplierBasisPoints: 15000
     })
     expect(response.status).toBe(401) // Unauthorized
+  })
+
+  test("WebSocket connects and receives round.snapshot", async () => {
+    const { io } = require("socket.io-client")
+    const port = app.getHttpServer().address().port
+    const socket = io(`http://localhost:${port}`, { transports: ['websocket'] })
+
+    await new Promise<void>((resolve, reject) => {
+      socket.on("connect", () => {
+        // Connected successfully
+      })
+
+      socket.on("round.snapshot", (snapshot: any) => {
+        // When there is no round, it sends null
+        expect(snapshot).toBeNull()
+        socket.disconnect()
+        resolve()
+      })
+
+      socket.on("connect_error", (err: any) => reject(err))
+      setTimeout(() => reject(new Error("Timeout waiting for round.snapshot")), 2000)
+    })
   })
 })

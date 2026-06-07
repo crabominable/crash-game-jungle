@@ -11,8 +11,9 @@ import { InMemoryRoundRepository } from "../../../src/infrastructure/persistence
 describe("Games application services", () => {
   test("creates a current round and exposes it as a snapshot", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       roundId: "round-1",
@@ -30,12 +31,13 @@ describe("Games application services", () => {
 
   test("drives a bet from pending wallet to active and then to cashout pending wallet", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
-    const acceptCashout = new AcceptCashoutService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const acceptCashout = new AcceptCashoutService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       roundId: "round-1",
@@ -76,12 +78,13 @@ describe("Games application services", () => {
 
   test("marks active bets as lost when the round crashes and no pending settlement remains", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
-    const crashRound = new CrashRoundService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const crashRound = new CrashRoundService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       crashMultiplierBasisPoints: 12_500,

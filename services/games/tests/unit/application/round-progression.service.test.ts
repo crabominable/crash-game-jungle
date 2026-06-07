@@ -10,12 +10,13 @@ import { InMemoryRoundRepository } from "../../../src/infrastructure/persistence
 describe("Round progression services", () => {
   test("allows creating the next current round after the previous one is settled", async () => {
     const repository = new InMemoryRoundRepository()
-    const createRound = new CreateRoundService(repository)
-    const placeBet = new PlaceBetService(repository)
-    const startRound = new StartRoundService(repository)
-    const crashRound = new CrashRoundService(repository)
-    const rejectBetDebit = new RejectBetDebitService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const mockPublisher = { publishRoundUpdated: () => {} }
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const placeBet = new PlaceBetService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const crashRound = new CrashRoundService(repository, mockPublisher)
+    const rejectBetDebit = new RejectBetDebitService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
       crashMultiplierBasisPoints: 15_500,

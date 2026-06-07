@@ -23,10 +23,12 @@ class InMemorySettlementEventPublisher implements SettlementEventPublisher {
 describe("Games settlement integration services", () => {
   test("places a bet and publishes a debit request event for wallets", async () => {
     const repository = new InMemoryRoundRepository()
+    const mockPublisher = { publishRoundUpdated: () => {} }
     const publisher = new InMemorySettlementEventPublisher()
-    const createRound = new CreateRoundService(repository)
+    const createRound = new CreateRoundService(repository, mockPublisher)
     const requestBetDebitSettlement = new RequestBetDebitSettlementService(
       repository,
+      mockPublisher,
       publisher,
     )
 
@@ -60,16 +62,18 @@ describe("Games settlement integration services", () => {
 
   test("accepts a cashout and publishes a credit request event for wallets", async () => {
     const repository = new InMemoryRoundRepository()
+    const mockPublisher = { publishRoundUpdated: () => {} }
     const publisher = new InMemorySettlementEventPublisher()
-    const createRound = new CreateRoundService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
     const requestBetDebitSettlement = new RequestBetDebitSettlementService(
       repository,
+      mockPublisher,
       publisher,
     )
     const requestCashoutCreditSettlement =
-      new RequestCashoutCreditSettlementService(repository, publisher)
+      new RequestCashoutCreditSettlementService(repository, mockPublisher, publisher)
 
     await createRound.execute({
       roundId: "round-1",
@@ -119,15 +123,18 @@ describe("Games settlement integration services", () => {
 
   test("turns a pending bet active after a confirmed debit event arrives from wallets", async () => {
     const repository = new InMemoryRoundRepository()
+    const mockPublisher = { publishRoundUpdated: () => {} }
     const publisher = new InMemorySettlementEventPublisher()
-    const createRound = new CreateRoundService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
     const requestBetDebitSettlement = new RequestBetDebitSettlementService(
       repository,
+      mockPublisher,
       publisher,
     )
     const handleBetDebitConfirmed = new HandleBetDebitConfirmedEventService(
       repository,
+      mockPublisher,
     )
 
     await createRound.execute({
@@ -166,19 +173,21 @@ describe("Games settlement integration services", () => {
 
   test("settles a cashout after a confirmed credit event arrives from wallets", async () => {
     const repository = new InMemoryRoundRepository()
+    const mockPublisher = { publishRoundUpdated: () => {} }
     const publisher = new InMemorySettlementEventPublisher()
-    const createRound = new CreateRoundService(repository)
-    const confirmBetDebit = new ConfirmBetDebitService(repository)
-    const startRound = new StartRoundService(repository)
-    const getCurrentRound = new GetCurrentRoundService(repository)
+    const createRound = new CreateRoundService(repository, mockPublisher)
+    const confirmBetDebit = new ConfirmBetDebitService(repository, mockPublisher)
+    const startRound = new StartRoundService(repository, mockPublisher)
+    const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
     const requestBetDebitSettlement = new RequestBetDebitSettlementService(
       repository,
+      mockPublisher,
       publisher,
     )
     const requestCashoutCreditSettlement =
-      new RequestCashoutCreditSettlementService(repository, publisher)
+      new RequestCashoutCreditSettlementService(repository, mockPublisher, publisher)
     const handleCashoutCreditConfirmed =
-      new HandleCashoutCreditConfirmedEventService(repository)
+      new HandleCashoutCreditConfirmedEventService(repository, mockPublisher)
 
     await createRound.execute({
       roundId: "round-1",

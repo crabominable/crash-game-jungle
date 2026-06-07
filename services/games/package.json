@@ -13,14 +13,18 @@
     "@crash/contracts": "workspace:*",
     "@nestjs/common": "^11.1.17",
     "@nestjs/core": "^11.1.17",
+    "@nestjs/event-emitter": "^3.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.17",
+    "@nestjs/platform-socket.io": "^11.1.24",
+    "@nestjs/websockets": "^11.1.24",
     "amqplib": "^0.10.9",
     "jwks-rsa": "^4.0.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@nestjs/testing": "^11.1.24",
@@ -29,6 +33,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^7.2.0",
     "bun-types": "latest",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2",
     "typescript": "^5.8.3"
   }

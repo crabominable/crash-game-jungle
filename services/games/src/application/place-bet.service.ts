@@ -1,3 +1,7 @@
+import {
+  ROUND_EVENT_PUBLISHER,
+  type RoundEventPublisher,
+} from "./round-events.publisher"
 import { Inject, Injectable } from "@nestjs/common"
 import { CurrentRoundNotFoundError } from "./games.application.errors"
 import {
@@ -18,6 +22,8 @@ export class PlaceBetService {
   constructor(
     @Inject(ROUND_REPOSITORY)
     private readonly roundRepository: RoundRepository,
+    @Inject(ROUND_EVENT_PUBLISHER)
+    private readonly roundEventPublisher: RoundEventPublisher,
   ) {}
 
   async execute(command: PlaceBetCommand): Promise<BetSnapshot> {
@@ -29,6 +35,7 @@ export class PlaceBetService {
 
     round.placeBet(command)
     await this.roundRepository.save(round)
+    this.roundEventPublisher.publishRoundUpdated(toRoundSnapshot(round))
 
     const snapshot = toRoundSnapshot(round)
 

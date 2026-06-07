@@ -1,3 +1,7 @@
+import {
+  ROUND_EVENT_PUBLISHER,
+  type RoundEventPublisher,
+} from "./round-events.publisher"
 import type {
   BetDebitRequestedEvent,
   CashoutCreditRequestedEvent,
@@ -36,6 +40,8 @@ export class RequestBetDebitSettlementService {
   constructor(
     @Inject(ROUND_REPOSITORY)
     private readonly roundRepository: RoundRepository,
+    @Inject(ROUND_EVENT_PUBLISHER)
+    private readonly roundEventPublisher: RoundEventPublisher,
     @Inject(SETTLEMENT_EVENT_PUBLISHER)
     private readonly settlementEventPublisher: SettlementEventPublisher,
   ) {}
@@ -51,6 +57,7 @@ export class RequestBetDebitSettlementService {
 
     const bet = round.placeBet(command)
     await this.roundRepository.save(round)
+    this.roundEventPublisher.publishRoundUpdated(toRoundSnapshot(round))
 
     const event: BetDebitRequestedEvent = {
       correlationId: command.correlationId,
@@ -78,6 +85,8 @@ export class RequestCashoutCreditSettlementService {
   constructor(
     @Inject(ROUND_REPOSITORY)
     private readonly roundRepository: RoundRepository,
+    @Inject(ROUND_EVENT_PUBLISHER)
+    private readonly roundEventPublisher: RoundEventPublisher,
     @Inject(SETTLEMENT_EVENT_PUBLISHER)
     private readonly settlementEventPublisher: SettlementEventPublisher,
   ) {}
@@ -93,6 +102,7 @@ export class RequestCashoutCreditSettlementService {
 
     const bet = round.acceptCashout(command)
     await this.roundRepository.save(round)
+    this.roundEventPublisher.publishRoundUpdated(toRoundSnapshot(round))
 
     const event: CashoutCreditRequestedEvent = {
       correlationId: command.cashoutCorrelationId,
