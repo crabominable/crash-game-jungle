@@ -7,17 +7,25 @@ import { AcceptCashoutService } from "../../application/accept-cashout.service"
 import { GetRoundHistoryService } from "../../application/get-round-history.service"
 import { VerifyRoundService } from "../../application/verify-round.service"
 import { PlayerId } from "../decorators/player-id.decorator"
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from "@nestjs/swagger"
 
-interface PlaceBetDto {
+class PlaceBetDto {
+  @ApiProperty({ description: "Amount to bet in minor units (e.g. cents)", example: 1000 })
   amountMinor: number
+
+  @ApiProperty({ description: "Idempotency key for the bet", example: "uuid-1234" })
   correlationId: string
 }
 
-interface AcceptCashoutDto {
+class AcceptCashoutDto {
+  @ApiProperty({ description: "Idempotency key for the cashout", example: "uuid-5678" })
   cashoutCorrelationId: string
+
+  @ApiProperty({ description: "Multiplier in basis points at which to cash out", example: 150 })
   payoutMultiplierBasisPoints: number
 }
 
+@ApiTags("Games")
 @Controller()
 export class GamesController {
   constructor(
@@ -29,11 +37,15 @@ export class GamesController {
   ) {}
 
   @Get("health")
+  @ApiOperation({ summary: "Health check" })
+  @ApiResponse({ status: 200, description: "Service is healthy" })
   check(): HealthCheckResponse {
     return { status: "ok", service: "games" }
   }
 
   @Get("rounds/history")
+  @ApiOperation({ summary: "Get round history" })
+  @ApiResponse({ status: 200, description: "Returns the history of recent rounds" })
   async getHistory() {
     try {
       return await this.getRoundHistory.execute(20)
@@ -43,6 +55,8 @@ export class GamesController {
   }
 
   @Get("rounds/:roundId/verify")
+  @ApiOperation({ summary: "Verify a past round cryptographically" })
+  @ApiResponse({ status: 200, description: "Returns round verification details" })
   async verify(@Param("roundId") roundId: string) {
     try {
       return await this.verifyRound.execute(roundId)
@@ -56,6 +70,9 @@ export class GamesController {
 
   @UseGuards(AuthGuard("jwt"))
   @Get("rounds/current")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get the current active round state" })
+  @ApiResponse({ status: 200, description: "Returns the current round state" })
   async getCurrent() {
     try {
       return await this.getCurrentRound.execute()
@@ -69,6 +86,9 @@ export class GamesController {
 
   @UseGuards(AuthGuard("jwt"))
   @Post("rounds/current/bets")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Place a bet on the current round" })
+  @ApiResponse({ status: 201, description: "Bet placed successfully" })
   async bet(@PlayerId() playerId: string, @Body() dto: PlaceBetDto) {
     try {
       return await this.placeBet.execute({
@@ -84,6 +104,9 @@ export class GamesController {
 
   @UseGuards(AuthGuard("jwt"))
   @Post("rounds/current/cashout")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Accept cashout for the current round" })
+  @ApiResponse({ status: 201, description: "Cashout successful" })
   async cashout(@PlayerId() playerId: string, @Body() dto: AcceptCashoutDto) {
     try {
       return await this.acceptCashout.execute({
