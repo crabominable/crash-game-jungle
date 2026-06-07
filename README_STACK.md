@@ -671,3 +671,18 @@ As inovacoes tecnicas implementadas e os racionais por tras delas incluem:
 2. **Exposicao Condicional Segura (Snapshots):** A modelagem de estado ditou a forma como isso e vazado para o mundo. O round.snapshot.ts foi atualizado para expor apenas o hash trancado durante as fases de setting_open e in_progress. Nenhum cliente (nem quem fizesse sniffing na rede) conseguiria descobrir o crashPoint. O seed secreto so e acoplado ao payload de envio e revelado aos clientes quando a rodada transita para os estados terminais irreversiveis (crashed e settled).
 
 3. **Desacoplamento da Fe (Verify Endpoint):** Nao exigimos fe cega do jogador na nossa interface. Implementamos o Use Case verify-round.service.ts anexado a um Endpoint isolado (GET /rounds/verify). O Frontend ou clientes externos podem bater nesse endpoint passando o seed revelado para testarem matematicamente se a inversao do Hash corresponde de fato ao crashPoint que os fez perder, comprovando lisura total da arquitetura sem expor a seguranca do host.
+
+### Por que adotar essa arquitetura visual e reativa no Frontend
+
+O Commit (feat(frontend): implement authenticated crash gameplay experience) coroou a engenharia do backend construindo o ponto de consumo final do produto. A aplicacao React atua como a lente pela qual toda a arquitetura de API Gateway, WebSockets e Mensageria e evidenciada.
+
+As solucoes tecnicas consolidadas na interface envolveram:
+
+1. **Gestao de Autenticacao com SSO Integrado:** Rejeitamos autenticacoes locais precarias. O aplicativo instanciou o @keycloak/keycloak-js englobado por um AuthContext. Clientes sem sessao sao instantaneamente interceptados e redirecionados para a tela de Single Sign-On da empresa. Apos o retorno, o contexto intercepta a Sessao OAuth e aderecia o Token JWT em todas as submissoes de apostas originadas no navegador.
+
+2. **Reatividade Hibrida (TanStack Query + Sockets):** 
+   - **Camada Fria:** Dados historicos e recuperacoes de Wallet (saldo) foram delegados ao **TanStack Query**. Sua arquitetura de cache previne que cada navegacao bombardeie o Kong com requisicoes HTTP (GET /wallets/me).
+   - **Camada Quente:** Para exibir o Jogo ao vivo, o socket.io-client foi confinado no GameContext, batendo unicamente na raiz do Gateway (/). Sempre que o motor do backend envia um 
+ound.snapshot, o Context propaga esse estado imutavel para os botoes e para o placar, re-renderizando a interface de forma extremamente fluida sem causar gargalos na rede local.
+
+3. **UI/UX Organica em Vanilla CSS:** Para cumprir a diretriz e restricao do teste a respeito do nao uso de utilitarios (Tailwind), adotamos metodologias estritas de *CSS Modules*. Desenhamos a estetica da "Floresta" provando habilidade nativa na criacao de "Design Tokens" (Variaveis CSS globais de Cores, Tipografia, Espacamento) e micro-animacoes nativas, evidenciando uma entrega de produto comercial nivel Premium que vai alem do CRUD basico.
