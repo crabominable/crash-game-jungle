@@ -625,10 +625,25 @@ O Commit 6 (feat(integration): settle bets asynchronously through RabbitMQ) intr
 
 As mudancas estruturais implementadas foram:
 
-1. **Desacoplamento via Publishers:** No servico games, operacoes criticas como Apostar (PlaceBetService) e Cashout passaram a emitir mensagens (wallet.debit.request e wallet.credit.request) para o RabbitMQ, acompanhadas de um correlationId. A entidade salva seu estado puramente como pendente (et_pending_wallet) e o fluxo da aplicacao segue sem travar aguardando resposta de rede.
+1. **Desacoplamento via Publishers:** No servico games, operacoes criticas como Apostar (PlaceBetService) e Cashout passaram a emitir mensagens (wallet.debit.request e wallet.credit.request) para o RabbitMQ, acompanhadas de um correlationId. A entidade salva seu estado puramente como pendente (set_pending_wallet) e o fluxo da aplicacao segue sem travar aguardando resposta de rede.
 
 2. **Processamento em Consumers (Listeners):**
 - No wallets, controllers de mensageria foram criados (com @EventPattern) para sugar as requisicoes da fila. Ele processa o debito ou credito e, ao final, publica um novo evento na via de mao dupla: wallet.debit.confirmed ou wallet.debit.rejected.
-- No games, outro listener consome essas confirmacoes. Ao receber um confirmed, o estado da aposta evolui de et_pending_wallet para et_active, completando o ciclo.
+- No games, outro listener consome essas confirmacoes. Ao receber um confirmed, o estado da aposta evolui de set_pending_wallet para set_active, completando o ciclo.
 
 3. **Resiliencia e Tolerancia a Falhas:** Este padrao de Eventual Consistency garante que, caso o servico wallets sofra uma queda abrupta, o jogo nao apresente falhas ou perca apostas. As mensagens ficam armazenadas na fila do RabbitMQ e sao processadas retroativamente no momento em que a conexao e reestabelecida, reconciliando o saldo final perfeitamente.
+
+### Por que expor a API via Kong e proteger com Keycloak JWT (Commit 7)
+
+O Commit 7 (feat(api): expose authenticated game and wallet flows through Kong) encerrou o ciclo de amadurecimento interno do dominio e finalmente abriu as portas do sistema para o mundo exterior (clientes HTTP), adotando o padrao de API Gateway e delegando a gestao de identidade (IdP).
+
+As alteracoes tecnicas implementadas e seus racionais foram:
+
+1. **Topologia Oculta via API Gateway (Kong):** Expor os servicos games e wallets em portas isoladas diretamente para a internet criaria gargalos severos de CORS para o Frontend, alem de revelar a topologia interna. Ao levantar o **Kong** na porta 8000 e configurar o proxy-reverso para as rotas (/games/* e /wallets/*), os clientes enxergam uma API unificada, limpa e padronizada.
+
+2. **Borda HTTP (Controllers Publicos):** Com o núcleo de regras consolidado, os Controladores REST (games.controller.ts e wallets.controller.ts) foram concretizados. Eles apenas recebem o tráfego HTTP e orquestram a chamada para os Use Cases preexistentes (POST /rounds/current/bets, POST /rounds/current/cashout, GET /wallets/me), sem possuir regra de negocio dentro de si mesmos.
+
+3. **Autenticacao Stateless e Blindada (Passport + IdP):**
+- Utilizamos a suite @nestjs/passport configurada como JwtStrategy, que valida a assinatura dos tokens consultando o endpoint JWKS do **Keycloak**.
+- As rotas que envolvem operacoes financeiras foram rigidamente protegidas usando @UseGuards(AuthGuard('jwt')).
+- Para blindar o sistema contra fraudes de falsa identidade (ex: um usuario enviando no Body da requisicao playerId="id-do-amigo" para apostar o dinheiro do outro), criamos um Parameter Decorator customizado @PlayerId(). Ele descarta o input do usuario e suga a identidade de forma puramente criptografica de dentro do token JWT verificado pelo Keycloak.
