@@ -608,3 +608,13 @@ Testes de `application` verificam se os casos de uso orquestram o dominio corret
 - permitir nova rodada depois da anterior estar encerrada
 
 Essa divisao deixa os testes mais explicativos e ajuda a encontrar rapidamente se o problema esta na regra principal ou na forma como ela esta sendo usada.
+
+### Por que focar em testes de invariantes de dinheiro e idempotencia
+
+O Commit 5 (test: prove payout truncation and wallet settlement idempotency) adicionou testes isolados focados especificamente nas bordas mais sensiveis do sistema antes de integra-lo a rede:
+
+1. **Truncamento de Payout (Money Invariants):** No jogo Crash, o multiplicador pode ser um numero altamente fracionado. Como a carteira opera estritamente em unidades minimas inteiras, o teste prova que qualquer multiplicacao e sempre arredondada para baixo (truncada). Isso previne vazamento financeiro por falha de arredondamento, protegendo a casa (banca).
+
+2. **Idempotencia de Liquidacao (Wallet Settlement Idempotency):** Como o sistema usara mensageria assincrona (RabbitMQ), existe a possibilidade real de uma mensagem ser entregue duas vezes (semantica *at-least-once*). Esses testes garantem que se o broker engasgar e a ordem de debito/credito com o mesmo correlationId chegar repetida, a carteira nao cobrara ou pagara duas vezes, preservando o ledger auditavel.
+
+Essa prova antecipada demonstra que o coracao financeiro esta matematicamente blindado antes mesmo de abri-lo para conexoes externas.
