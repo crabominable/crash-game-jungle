@@ -655,5 +655,19 @@ O Commit (feat(realtime): proxy game websocket through Kong with round snapshots
 As inovacoes tecnicas implementadas e seus motivos incluem:
 
 1. **Gateways Integrados via Socket.IO:** Em vez de isolar o motor de mensageria para o cliente em um terceiro microsservico (aumentando a latencia da rede interna), construimos o GamesGateway injetando o @nestjs/platform-socket.io diretamente na aplicacao. O ciclo de vida do Socket amarra-se perfeitamente aos Use Cases do dominio.
+
 2. **Arquitetura de "Snapshot Engine":** Em jogos multiplayer rapidos, emitir eventos fragmentados (ex: set_added, multiplier_changed) joga o fardo da conciliacao de estado para os clientes, gerando bugs de dessincronia. Adotamos o padrao de Snapshot: construimos um TickService com um "Heartbeat". Constantemente, ele compila a foto exata e completa da rodada atual (RoundSnapshot) e faz um .emit() pro Gateway. O Frontend descarta o trabalho logico e age apenas como um renderizador passivo daquele estado imutavel.
+
 3. **Tunneling Transparente sem portas extras:** A topologia de borda continuou intacta. Em vez de abrir uma porta separada (ex: 3003) correndo o risco de bloqueios por firewalls de rede corporativa, o Frontend conecta seu Web Socket na mesma raiz do Kong (http://localhost:8000). O Kong processa os cabecalhos HTTP de Upgrade (Connection: Upgrade) e matem o tunel bidirecional aberto nos bastidores roteando diretamente ate a camada do NestJS.
+
+### Por que adotar um sistema Provably Fair
+
+O Commit (feat(games): add provably fair artifacts history and verify endpoint) introduziu o modulo de integridade criptografica ao sistema. Em aplicativos financeiros e de apostas em tempo real, e mandatorio provar de forma irrefutavel que a "Banca" nao manipulou o resultado com base no volume financeiro apostado pelos jogadores durante o voo.
+
+As inovacoes tecnicas implementadas e os racionais por tras delas incluem:
+
+1. **Determinismo no Momento Zero (provably-fair.ts):** O crashPoint deixou de ser gerado por um simples Math.random() na hora da explosao. Agora, na criacao da rodada (create-round.service.ts), utilizamos o modulo crypto nativo do Node.js para gerar uma chave robusta (seed/salt). O resultado exato da rodada e calculado imediatamente, e a combinacao sofre um processo matematico de Hash SHA-256 (unidirecional e irreversivel), formalizando um "Cadeado Criptografico" daquele resultado imutavel.
+
+2. **Exposicao Condicional Segura (Snapshots):** A modelagem de estado ditou a forma como isso e vazado para o mundo. O round.snapshot.ts foi atualizado para expor apenas o hash trancado durante as fases de setting_open e in_progress. Nenhum cliente (nem quem fizesse sniffing na rede) conseguiria descobrir o crashPoint. O seed secreto so e acoplado ao payload de envio e revelado aos clientes quando a rodada transita para os estados terminais irreversiveis (crashed e settled).
+
+3. **Desacoplamento da Fe (Verify Endpoint):** Nao exigimos fe cega do jogador na nossa interface. Implementamos o Use Case verify-round.service.ts anexado a um Endpoint isolado (GET /rounds/verify). O Frontend ou clientes externos podem bater nesse endpoint passando o seed revelado para testarem matematicamente se a inversao do Hash corresponde de fato ao crashPoint que os fez perder, comprovando lisura total da arquitetura sem expor a seguranca do host.
