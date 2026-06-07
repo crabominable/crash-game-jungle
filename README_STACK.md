@@ -479,7 +479,7 @@ Por isso existe `settled`: ele so aparece quando nao resta mais pendencia financ
 
 ### Por que existe reconciliacao tardia
 
-Em sistemas assincronos, as respostas nao chegam sempre na ordem perfeita. O Commit 4 foi desenhado ja considerando isso.
+Em sistemas assincronos, as respostas nao chegam sempre na ordem perfeita. Isso foi desenhado ja considerando isso.
 
 Exemplo:
 
@@ -507,7 +507,7 @@ Cada servico fica responsavel pelo que lhe pertence.
 
 ### Por que os casos de uso do `games` foram quebrados em varios services pequenos
 
-Em vez de um service gigante fazendo tudo, o Commit 4 criou varios casos de uso pequenos:
+Em vez de um service gigante fazendo tudo, o commit criou varios casos de uso pequenos:
 
 - `create-round`
 - `start-round`
@@ -611,7 +611,7 @@ Essa divisao deixa os testes mais explicativos e ajuda a encontrar rapidamente s
 
 ### Por que focar em testes de invariantes de dinheiro e idempotencia
 
-O Commit 5 (test: prove payout truncation and wallet settlement idempotency) adicionou testes isolados focados especificamente nas bordas mais sensiveis do sistema antes de integra-lo a rede:
+O Commit (test: prove payout truncation and wallet settlement idempotency) adicionou testes isolados focados especificamente nas bordas mais sensiveis do sistema antes de integra-lo a rede:
 
 1. **Truncamento de Payout (Money Invariants):** No jogo Crash, o multiplicador pode ser um numero altamente fracionado. Como a carteira opera estritamente em unidades minimas inteiras, o teste prova que qualquer multiplicacao e sempre arredondada para baixo (truncada). Isso previne vazamento financeiro por falha de arredondamento, protegendo a casa (banca).
 
@@ -619,9 +619,9 @@ O Commit 5 (test: prove payout truncation and wallet settlement idempotency) adi
 
 Essa prova antecipada demonstra que o coracao financeiro esta matematicamente blindado antes mesmo de abri-lo para conexoes externas.
 
-### Por que adotar RabbitMQ e Consistencia Eventual (Commit 6)
+### Por que adotar RabbitMQ e Consistencia Eventual
 
-O Commit 6 (feat(integration): settle bets asynchronously through RabbitMQ) introduziu a comunicacao via broker para integrar os microsservicos, rejeitando o padrao de chamadas HTTP sincronas diretas.
+O Commit (feat(integration): settle bets asynchronously through RabbitMQ) introduziu a comunicacao via broker para integrar os microsservicos, rejeitando o padrao de chamadas HTTP sincronas diretas.
 
 As mudancas estruturais implementadas foram:
 
@@ -633,9 +633,9 @@ As mudancas estruturais implementadas foram:
 
 3. **Resiliencia e Tolerancia a Falhas:** Este padrao de Eventual Consistency garante que, caso o servico wallets sofra uma queda abrupta, o jogo nao apresente falhas ou perca apostas. As mensagens ficam armazenadas na fila do RabbitMQ e sao processadas retroativamente no momento em que a conexao e reestabelecida, reconciliando o saldo final perfeitamente.
 
-### Por que expor a API via Kong e proteger com Keycloak JWT (Commit 7)
+### Por que expor a API via Kong e proteger com Keycloak JWT
 
-O Commit 7 (feat(api): expose authenticated game and wallet flows through Kong) encerrou o ciclo de amadurecimento interno do dominio e finalmente abriu as portas do sistema para o mundo exterior (clientes HTTP), adotando o padrao de API Gateway e delegando a gestao de identidade (IdP).
+O Commit (feat(api): expose authenticated game and wallet flows through Kong) encerrou o ciclo de amadurecimento interno do dominio e finalmente abriu as portas do sistema para o mundo exterior (clientes HTTP), adotando o padrao de API Gateway e delegando a gestao de identidade (IdP).
 
 As alteracoes tecnicas implementadas e seus racionais foram:
 
@@ -647,3 +647,13 @@ As alteracoes tecnicas implementadas e seus racionais foram:
 - Utilizamos a suite @nestjs/passport configurada como JwtStrategy, que valida a assinatura dos tokens consultando o endpoint JWKS do **Keycloak**.
 - As rotas que envolvem operacoes financeiras foram rigidamente protegidas usando @UseGuards(AuthGuard('jwt')).
 - Para blindar o sistema contra fraudes de falsa identidade (ex: um usuario enviando no Body da requisicao playerId="id-do-amigo" para apostar o dinheiro do outro), criamos um Parameter Decorator customizado @PlayerId(). Ele descarta o input do usuario e suga a identidade de forma puramente criptografica de dentro do token JWT verificado pelo Keycloak.
+
+### Por que usar WebSockets com Snapshot Engine e Proxy no Kong
+
+O Commit (feat(realtime): proxy game websocket through Kong with round snapshots) supriu a necessidade vital do produto de reagir em tempo real (milissegundos) a mudancas de estado, algo que o padrao HTTP Request/Response (REST) ou o *Polling* abusivo seriam incapazes de sustentar com performance.
+
+As inovacoes tecnicas implementadas e seus motivos incluem:
+
+1. **Gateways Integrados via Socket.IO:** Em vez de isolar o motor de mensageria para o cliente em um terceiro microsservico (aumentando a latencia da rede interna), construimos o GamesGateway injetando o @nestjs/platform-socket.io diretamente na aplicacao. O ciclo de vida do Socket amarra-se perfeitamente aos Use Cases do dominio.
+2. **Arquitetura de "Snapshot Engine":** Em jogos multiplayer rapidos, emitir eventos fragmentados (ex: set_added, multiplier_changed) joga o fardo da conciliacao de estado para os clientes, gerando bugs de dessincronia. Adotamos o padrao de Snapshot: construimos um TickService com um "Heartbeat". Constantemente, ele compila a foto exata e completa da rodada atual (RoundSnapshot) e faz um .emit() pro Gateway. O Frontend descarta o trabalho logico e age apenas como um renderizador passivo daquele estado imutavel.
+3. **Tunneling Transparente sem portas extras:** A topologia de borda continuou intacta. Em vez de abrir uma porta separada (ex: 3003) correndo o risco de bloqueios por firewalls de rede corporativa, o Frontend conecta seu Web Socket na mesma raiz do Kong (http://localhost:8000). O Kong processa os cabecalhos HTTP de Upgrade (Connection: Upgrade) e matem o tunel bidirecional aberto nos bastidores roteando diretamente ate a camada do NestJS.
