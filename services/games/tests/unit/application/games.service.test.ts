@@ -7,6 +7,14 @@ import { GetCurrentRoundService } from "../../../src/application/get-current-rou
 import { PlaceBetService } from "../../../src/application/place-bet.service"
 import { StartRoundService } from "../../../src/application/start-round.service"
 import { InMemoryRoundRepository } from "../../../src/infrastructure/persistence/in-memory-round.repository"
+import { ProvablyFair } from "../../../src/domain/provably-fair"
+
+ProvablyFair.generateRoundArtifacts = () => ({
+  algorithmVersion: "1.0",
+  crashMultiplierBasisPoints: 50_000,
+  serverSeed: "mock-seed",
+  serverSeedHash: "mock-hash",
+})
 
 describe("Games application services", () => {
   test("creates a current round and exposes it as a snapshot", async () => {
@@ -87,7 +95,6 @@ describe("Games application services", () => {
     const getCurrentRound = new GetCurrentRoundService(repository, mockPublisher)
 
     await createRound.execute({
-      crashMultiplierBasisPoints: 12_500,
       roundId: "round-1",
       startedAt: "2026-06-06T00:00:00.000Z",
     })

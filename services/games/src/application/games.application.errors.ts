@@ -11,3 +11,10 @@ export class CurrentRoundNotFoundError extends Error {
     this.name = "CurrentRoundNotFoundError"
   }
 }
+
+export class RoundNotFoundError extends Error {
+  constructor(readonly roundId: string) {
+    super(`Round ${roundId} not found`)
+    this.name = "RoundNotFoundError"
+  }
+}

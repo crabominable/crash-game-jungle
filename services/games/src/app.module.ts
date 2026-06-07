@@ -13,6 +13,8 @@ import { HandleCashoutCreditRejectedEventService } from "./application/handle-ca
 import { PlaceBetService } from "./application/place-bet.service"
 import { RejectBetDebitService } from "./application/reject-bet-debit.service"
 import { RejectCashoutCreditService } from "./application/reject-cashout-credit.service"
+import { GetRoundHistoryService } from "./application/get-round-history.service"
+import { VerifyRoundService } from "./application/verify-round.service"
 import { ROUND_REPOSITORY } from "./application/round.repository"
 import { ROUND_EVENT_PUBLISHER } from "./application/round-events.publisher"
 import {
@@ -43,6 +45,7 @@ import { AuthModule } from "./infrastructure/auth/auth.module"
     CrashRoundService,
     CreateRoundService,
     GetCurrentRoundService,
+    GetRoundHistoryService,
     HandleBetDebitConfirmedEventService,
     HandleBetDebitRejectedEventService,
     HandleCashoutCreditConfirmedEventService,
@@ -53,6 +56,7 @@ import { AuthModule } from "./infrastructure/auth/auth.module"
     RequestBetDebitSettlementService,
     RequestCashoutCreditSettlementService,
     StartRoundService,
+    VerifyRoundService,
     RabbitMqGamesSettlementIntegration,
     LocalRoundEventsPublisher,
     InMemoryRoundRepository,

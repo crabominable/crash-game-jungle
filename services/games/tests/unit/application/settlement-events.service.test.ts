@@ -11,6 +11,14 @@ import { StartRoundService } from "../../../src/application/start-round.service"
 import { HandleBetDebitConfirmedEventService } from "../../../src/application/handle-bet-debit-confirmed-event.service"
 import { HandleCashoutCreditConfirmedEventService } from "../../../src/application/handle-cashout-credit-confirmed-event.service"
 import { InMemoryRoundRepository } from "../../../src/infrastructure/persistence/in-memory-round.repository"
+import { ProvablyFair } from "../../../src/domain/provably-fair"
+
+ProvablyFair.generateRoundArtifacts = () => ({
+  algorithmVersion: "1.0",
+  crashMultiplierBasisPoints: 50_000,
+  serverSeed: "mock-seed",
+  serverSeedHash: "mock-hash",
+})
 
 class InMemorySettlementEventPublisher implements SettlementEventPublisher {
   readonly publishedEvents: unknown[] = []

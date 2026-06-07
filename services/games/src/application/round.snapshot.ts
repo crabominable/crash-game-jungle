@@ -15,22 +15,30 @@ export interface BetSnapshot {
 }
 
 export interface RoundSnapshot {
+  algorithmVersion: string
   bets: BetSnapshot[]
   crashMultiplierBasisPoints?: number
   crashedAt?: string
   roundId: string
   openedAt?: string
+  serverSeed?: string
+  serverSeedHash: string
   startedAt?: string
   status: Round["status"]
 }
 
 export function toRoundSnapshot(round: Round): RoundSnapshot {
   return {
+    algorithmVersion: round.algorithmVersion,
     bets: round.bets.map(toBetSnapshot),
     crashMultiplierBasisPoints: round.crashMultiplierBasisPoints,
     crashedAt: round.crashedAtTimestamp,
     openedAt: round.openedAt,
     roundId: round.roundId,
+    serverSeed: ["crashed", "settled"].includes(round.status)
+      ? round.serverSeed
+      : undefined,
+    serverSeedHash: round.serverSeedHash,
     startedAt: round.startedAtTimestamp,
     status: round.status,
   }

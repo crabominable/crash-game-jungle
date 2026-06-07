@@ -3,6 +3,7 @@ import {
   type RoundEventPublisher,
 } from "./round-events.publisher"
 import { Inject, Injectable } from "@nestjs/common"
+import { ProvablyFair } from "../domain/provably-fair"
 import { Round } from "../domain/round/round"
 import { CurrentRoundAlreadyExistsError } from "./games.application.errors"
 import {
@@ -12,7 +13,6 @@ import {
 import { toRoundSnapshot, type RoundSnapshot } from "./round.snapshot"
 
 export interface CreateRoundCommand {
-  crashMultiplierBasisPoints?: number
   roundId: string
   startedAt: string
 }
@@ -27,11 +27,20 @@ export class CreateRoundService {
   ) {}
 
   async execute(command: CreateRoundCommand): Promise<RoundSnapshot> {
-    const round = Round.create(command)
+    const provablyFair = ProvablyFair.generateRoundArtifacts()
+
+    const round = Round.create({
+      algorithmVersion: provablyFair.algorithmVersion,
+      crashMultiplierBasisPoints: provablyFair.crashMultiplierBasisPoints,
+      roundId: command.roundId,
+      serverSeed: provablyFair.serverSeed,
+      serverSeedHash: provablyFair.serverSeedHash,
+      startedAt: command.startedAt,
+    })
 
     try {
       await this.roundRepository.create(round)
-    this.roundEventPublisher.publishRoundUpdated(toRoundSnapshot(round))
+      this.roundEventPublisher.publishRoundUpdated(toRoundSnapshot(round))
     } catch (error) {
       if (error instanceof CurrentRoundAlreadyExistsError) {
         throw error

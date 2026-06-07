@@ -37,8 +37,11 @@ export interface Bet {
 }
 
 export interface RoundCreateInput {
-  crashMultiplierBasisPoints?: number
+  algorithmVersion: string
+  crashMultiplierBasisPoints: number
   roundId: string
+  serverSeed: string
+  serverSeedHash: string
   startedAt: string
 }
 
@@ -68,11 +71,21 @@ export interface AcceptCashoutInput {
 
 export class Round {
   static create({
+    algorithmVersion,
     crashMultiplierBasisPoints,
     roundId,
+    serverSeed,
+    serverSeedHash,
     startedAt,
   }: RoundCreateInput): Round {
-    return new Round(roundId, startedAt, crashMultiplierBasisPoints)
+    return new Round(
+      roundId,
+      startedAt,
+      crashMultiplierBasisPoints,
+      algorithmVersion,
+      serverSeed,
+      serverSeedHash,
+    )
   }
 
   private readonly betEntries: Bet[] = []
@@ -80,7 +93,10 @@ export class Round {
   private constructor(
     readonly roundId: string,
     readonly openedAt: string,
-    readonly crashMultiplierBasisPoints: number | undefined,
+    readonly crashMultiplierBasisPoints: number,
+    readonly algorithmVersion: string,
+    readonly serverSeed: string,
+    readonly serverSeedHash: string,
     private currentStatus: RoundStatus = "betting_open",
     private startedAt?: string,
     private crashedAt?: string,
@@ -185,8 +201,7 @@ export class Round {
       !Number.isFinite(payoutMultiplierBasisPoints) ||
       !Number.isInteger(payoutMultiplierBasisPoints) ||
       payoutMultiplierBasisPoints < 10_000 ||
-      (this.crashMultiplierBasisPoints !== undefined &&
-        payoutMultiplierBasisPoints >= this.crashMultiplierBasisPoints)
+      payoutMultiplierBasisPoints >= this.crashMultiplierBasisPoints
     ) {
       throw new CashoutMultiplierOutOfRangeError(
         this.roundId,

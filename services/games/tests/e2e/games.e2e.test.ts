@@ -58,6 +58,17 @@ describe("GamesController (e2e)", () => {
     expect(response.status).toBe(401) // Unauthorized
   })
 
+  test("/rounds/history (GET) should return 200 without authentication", async () => {
+    const response = await request(app.getHttpServer()).get("/rounds/history")
+    expect(response.status).toBe(200)
+    expect(Array.isArray(response.body)).toBe(true)
+  })
+
+  test("/rounds/:roundId/verify (GET) should return 404 for unknown round", async () => {
+    const response = await request(app.getHttpServer()).get("/rounds/unknown-123/verify")
+    expect(response.status).toBe(404)
+  })
+
   test("WebSocket connects and receives round.snapshot", async () => {
     const { io } = require("socket.io-client")
     const port = app.getHttpServer().address().port
