@@ -10,10 +10,9 @@ export const Route = createFileRoute('/')({
 function Mascot({ multiplier }: { multiplier: number }) {
   // Simple mascot SVG (Monkey)
   return (
-    <div className="mascot-container" style={{ transform: `translate(-50%, calc(-50% - ${Math.min(multiplier * 2, 50)}px))` }}>
-      <svg className="mascot-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <div className="mascot-container absolute top-1/2 left-1/2 w-full h-full flex justify-center items-center opacity-15" style={{ transform: `translate(-50%, calc(-50% - ${Math.min(multiplier * 2, 50)}px))` }}>
+      <svg className="w-[300px] h-[300px]" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="45" fill="none" stroke="var(--color-brown-dark)" strokeWidth="2"/>
-        {/* Monkey Face */}
         <circle cx="50" cy="50" r="30" fill="var(--color-brown-primary)" />
         <ellipse cx="50" cy="58" rx="20" ry="15" fill="#d7ccc8" />
         <circle cx="35" cy="40" r="8" fill="#d7ccc8" />
@@ -21,7 +20,6 @@ function Mascot({ multiplier }: { multiplier: number }) {
         <circle cx="35" cy="40" r="3" fill="#3e2723" />
         <circle cx="65" cy="40" r="3" fill="#3e2723" />
         <path d="M 40 60 Q 50 70 60 60" fill="transparent" stroke="#3e2723" strokeWidth="3" />
-        {/* Ears */}
         <circle cx="15" cy="45" r="12" fill="var(--color-brown-primary)" />
         <circle cx="85" cy="45" r="12" fill="var(--color-brown-primary)" />
       </svg>
@@ -35,12 +33,10 @@ function CrashGame() {
   const [betAmount, setBetAmount] = useState('10')
   const [displayMultiplier, setDisplayMultiplier] = useState(1.0)
 
-  // Derive active states
   const isBettingOpen = round?.status === 'betting_open'
   const isInProgress = round?.status === 'in_progress'
   const isCrashed = round?.status === 'crashed' || round?.status === 'settled'
   
-  // Find my bet
   const myBet = round?.bets.find((b) => b.playerId === userId)
   const hasPlacedBet = !!myBet
   const isMyBetActive = myBet?.status === 'bet_active' || myBet?.status === 'cashout_pending_wallet'
@@ -55,9 +51,6 @@ function CrashGame() {
       const updateMultiplier = () => {
         const now = Date.now()
         const elapsedMs = Math.max(0, now - startTime)
-        // Inverse of crash formula approx for visualization
-        // 100 * e / (e - h) ... the exact real-time curve requires knowing the rate.
-        // For visual sake: e^(r*t) where r is ~0.00006
         const currentMult = Math.exp(0.00006 * elapsedMs)
         setDisplayMultiplier(currentMult)
         animationFrame = requestAnimationFrame(updateMultiplier)
@@ -85,7 +78,6 @@ function CrashGame() {
       const amountMinor = Math.floor(parseFloat(betAmount) * 100)
       placeBet(amountMinor)
     } else if (isInProgress && isMyBetActive) {
-      // Cashout at current visual multiplier
       const currentBasisPoints = Math.floor(displayMultiplier * 10000)
       cashout(currentBasisPoints)
     }
@@ -93,38 +85,35 @@ function CrashGame() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
-        <div className="header-logo">
+      <header className="flex justify-between items-center px-8 py-4 bg-bg-panel border-b-2 border-brown-dark">
+        <div className="text-2xl font-bold text-accent-yellow flex items-center gap-2">
           🌴 Crash Monkey
         </div>
         
-        <div className="header-user">
+        <div className="flex items-center gap-6">
           {isAuthenticated ? (
             <>
-              <div className="wallet-balance">
+              <div className="bg-bg-card px-4 py-2 rounded-full font-mono font-semibold text-accent-yellow flex items-center gap-2 border border-brown-primary">
                 💰 R$ {wallet ? (parseInt(wallet.balanceMinor) / 100).toFixed(2) : "0.00"}
               </div>
-              <span style={{color: 'var(--color-text-secondary)', fontSize: '0.875rem'}}>{userId}</span>
-              <button className="btn-login" onClick={logout} style={{padding: '0.25rem 0.75rem'}}>Sair</button>
+              <span className="text-text-secondary text-sm">{userId}</span>
+              <button className="bg-brown-primary hover:bg-brown-dark text-white px-3 py-1 rounded-md font-bold transition-colors" onClick={logout}>Sair</button>
             </>
           ) : (
-            <button className="btn-login" onClick={login}>Entrar</button>
+            <button className="bg-brown-primary hover:bg-brown-dark text-white px-6 py-2 rounded-md font-bold transition-colors" onClick={login}>Entrar</button>
           )}
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="main-content">
+      <main className="flex flex-1 overflow-hidden">
         
-        {/* Sidebar Controls */}
-        <aside className="sidebar">
-          <div className="bet-form-container">
-            <div className="bet-input-group">
-              <label>Valor da Aposta (R$)</label>
+        <aside className="w-[320px] bg-bg-panel border-r-2 border-brown-dark flex flex-col">
+          <div className="p-6 border-b border-bg-card">
+            <div className="flex flex-col gap-2 mb-4">
+              <label className="text-sm text-text-secondary">Valor da Aposta (R$)</label>
               <input 
                 type="number" 
-                className="bet-input" 
+                className="bg-bg-dark border border-brown-primary text-text-primary px-4 py-3 rounded-md text-base font-mono outline-none transition-colors focus:border-accent-green" 
                 value={betAmount} 
                 onChange={e => setBetAmount(e.target.value)}
                 min="0.1"
@@ -133,10 +122,10 @@ function CrashGame() {
               />
             </div>
             
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="text-accent-red text-sm mt-2 text-center">{error}</div>}
             
             <button 
-              className={`btn ${isMyBetActive && isInProgress ? 'btn-cashout' : 'btn-bet'}`}
+              className={`w-full rounded-md p-4 text-lg font-bold uppercase tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isMyBetActive && isInProgress ? 'bg-accent-yellow text-bg-dark hover:bg-accent-yellow-hover hover:-translate-y-0.5' : 'bg-accent-green text-bg-dark hover:bg-accent-green-hover hover:-translate-y-0.5'}`}
               disabled={(!isBettingOpen && !isInProgress) || (isBettingOpen && hasPlacedBet) || (isInProgress && !isMyBetActive) || !isConnected}
               onClick={handleBetClick}
             >
@@ -147,8 +136,8 @@ function CrashGame() {
             </button>
           </div>
           
-          <div className="players-list-container">
-            <div className="players-list-header">
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="text-sm text-text-secondary mb-4 flex justify-between">
               <span>Jogadores ({round?.bets.length || 0})</span>
             </div>
             
@@ -156,13 +145,13 @@ function CrashGame() {
               const isWin = bet.status === 'won_settled' || bet.status === 'cashout_pending_wallet'
               const isLost = bet.status === 'lost'
               return (
-                <div key={bet.betId} className={`player-item ${isWin ? 'cashed-out' : ''} ${isLost ? 'lost' : ''}`}>
-                  <span className="player-name">{bet.playerId}</span>
-                  <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                <div key={bet.betId} className={`flex justify-between items-center p-2 rounded-sm mb-1 bg-bg-card ${isWin ? 'bg-[rgba(46,204,113,0.1)] border-l-4 border-accent-green' : ''} ${isLost ? 'opacity-60' : ''}`}>
+                  <span className="font-medium max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">{bet.playerId}</span>
+                  <div className="flex gap-2 items-center">
                     {isWin && bet.acceptedMultiplierBasisPoints && (
-                      <span className="player-multiplier">{(bet.acceptedMultiplierBasisPoints / 10000).toFixed(2)}x</span>
+                      <span className="font-mono text-accent-green font-bold bg-[rgba(46,204,113,0.2)] px-1.5 py-0.5 rounded-sm text-sm">{(bet.acceptedMultiplierBasisPoints / 10000).toFixed(2)}x</span>
                     )}
-                    <span className="player-amount">R$ {(bet.amountMinor / 100).toFixed(2)}</span>
+                    <span className="font-mono text-text-secondary">R$ {(bet.amountMinor / 100).toFixed(2)}</span>
                   </div>
                 </div>
               )
@@ -170,41 +159,39 @@ function CrashGame() {
           </div>
         </aside>
 
-        {/* Game Canvas */}
-        <section className="game-area">
-          {/* History Bar */}
-          <div className="history-bar">
+        <section className="flex-1 flex flex-col relative bg-[radial-gradient(circle_at_center,var(--color-bg-panel)_0%,var(--color-bg-dark)_100%)]">
+          <div className="history-bar flex gap-2 px-4 py-3 bg-black/20 overflow-x-auto">
             {history.map((h) => {
               const mult = (h.crashMultiplierBasisPoints || 10000) / 10000
               const isHigh = mult >= 2.0
               return (
-                <div key={h.roundId} className={`history-item ${isHigh ? 'high' : 'low'}`}>
+                <div key={h.roundId} className={`px-3 py-1 rounded-full font-mono font-bold text-sm whitespace-nowrap ${isHigh ? 'bg-[rgba(46,204,113,0.2)] text-accent-green' : 'bg-[rgba(231,76,60,0.2)] text-accent-red'}`}>
                   {mult.toFixed(2)}x
                 </div>
               )
             })}
           </div>
 
-          <div className="display-container">
-            {!isConnected && <div className="connection-warning">Conectando ao servidor...</div>}
+          <div className="flex-1 flex justify-center items-center flex-col relative">
+            {!isConnected && <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-accent-red text-white px-6 py-2 rounded-full font-bold z-50 shadow-lg">Conectando ao servidor...</div>}
             
-            {isBettingOpen && <div className="status-overlay">Preparando próxima rodada...</div>}
+            {isBettingOpen && <div className="absolute top-8 bg-black/60 px-6 py-2 rounded-full font-bold tracking-widest uppercase text-accent-yellow z-20">Preparando próxima rodada...</div>}
             
             <Mascot multiplier={displayMultiplier} />
             
-            <div className={`multiplier-text ${isCrashed ? 'crashed' : ''}`}>
+            <div className={`text-[8rem] font-black font-mono text-text-primary z-10 transition-colors duration-300 drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)] ${isCrashed ? 'text-accent-red' : ''}`}>
               {displayMultiplier.toFixed(2)}x
             </div>
             
             {isCrashed && (
-              <div style={{ color: 'var(--color-accent-red)', fontWeight: 'bold', fontSize: '1.5rem', marginTop: '1rem', zIndex: 10 }}>
+              <div className="text-accent-red font-bold text-2xl mt-4 z-10">
                 Crashed!
               </div>
             )}
             
             {round?.serverSeedHash && (
-              <div className="provably-fair-info">
-                Provably Fair Hash: <span className="hash-text">{round.serverSeedHash}</span>
+              <div className="absolute bottom-4 right-4 bg-black/40 px-4 py-2 rounded-md font-mono text-xs text-text-secondary">
+                Provably Fair Hash: <span className="text-accent-yellow">{round.serverSeedHash}</span>
               </div>
             )}
           </div>

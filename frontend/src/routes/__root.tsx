@@ -32,7 +32,7 @@ function RootComponent() {
     <RootDocument>
       <AuthProvider>
         <GameProvider>
-          <div className="app-container">
+          <div className="flex flex-col h-screen">
             <Outlet />
           </div>
         </GameProvider>
