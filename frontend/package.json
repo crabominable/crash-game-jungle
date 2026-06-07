@@ -12,8 +12,10 @@
   "dependencies": {
     "@tanstack/react-router": "^1.170.13",
     "@tanstack/react-start": "^1.168.22",
+    "keycloak-js": "^26.2.4",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",

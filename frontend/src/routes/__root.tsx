@@ -5,6 +5,9 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router'
+import { AuthProvider } from '../contexts/AuthContext'
+import { GameProvider } from '../contexts/GameContext'
+import '../index.css'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -17,7 +20,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Crash Game Frontend Scaffold',
+        title: 'Crash Game - Forest Edition',
       },
     ],
   }),
@@ -27,7 +30,13 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <AuthProvider>
+        <GameProvider>
+          <div className="app-container">
+            <Outlet />
+          </div>
+        </GameProvider>
+      </AuthProvider>
     </RootDocument>
   )
 }
@@ -37,6 +46,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     <html>
       <head>
         <HeadContent />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet" />
       </head>
       <body>
         {children}
