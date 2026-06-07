@@ -6,6 +6,7 @@
       "name": "crash-game",
       "devDependencies": {
         "bun-types": "latest",
+        "socket.io-client": "^4.8.3",
       },
     },
     "frontend": {

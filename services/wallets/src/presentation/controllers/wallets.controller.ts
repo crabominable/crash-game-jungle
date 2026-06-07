@@ -16,12 +16,11 @@ export class WalletsController {
   @UseGuards(AuthGuard("jwt"))
   @Get("me")
   async getMyWallet(@PlayerId() playerId: string) {
-    const result = await this.getWalletByPlayerService.execute({ playerId })
-    
-    if (result.status === "failed") {
+    try {
+      const wallet = await this.getWalletByPlayerService.execute({ playerId })
+      return wallet
+    } catch (error) {
       throw new UnauthorizedException("Wallet not found")
     }
-
-    return result.wallet
   }
 }
