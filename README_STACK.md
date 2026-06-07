@@ -686,3 +686,21 @@ As solucoes tecnicas consolidadas na interface envolveram:
 ound.snapshot, o Context propaga esse estado imutavel para os botoes e para o placar, re-renderizando a interface de forma extremamente fluida sem causar gargalos na rede local.
 
 3. **UI/UX Organica em Vanilla CSS:** Para cumprir a diretriz e restricao do teste a respeito do nao uso de utilitarios (Tailwind), adotamos metodologias estritas de *CSS Modules*. Desenhamos a estetica da "Floresta" provando habilidade nativa na criacao de "Design Tokens" (Variaveis CSS globais de Cores, Tipografia, Espacamento) e micro-animacoes nativas, evidenciando uma entrega de produto comercial nivel Premium que vai alem do CRUD basico.
+
+### Por que criar um End-to-End Mestre do Fluxo
+
+O Commit (test: cover core gameplay monetary and realtime flows) foi o fechamento magistral do projeto. Embora tivessemos extensa cobertura de testes unitarios (provando regras de negocio do dominio) e de snapshot, sistemas distribuidos falham em grande parte nas costuras da rede (Network Seams).
+
+A engenharia e racional por tras da criacao deste Teste E2E (Caixa Preta) raiz incluem:
+
+1. **Abandono Estrategico de Mocks:** O script core-flow.e2e.test.ts e executado exclusivamente contra a stack real instanciada pelo docker-compose. Sem interceptadores de rede ou bancos em memoria, ele lida com a latencia e topologia nua e crua.
+
+2. **Exercicio da Camada de Seguranca (OIDC via API):** A premissa de um E2E realista exige autenticacao real. O teste realiza chamadas POST nativas para a porta 8080 do Keycloak (/protocol/openid-connect/token) utilizando as credenciais cadastradas na rampa de Setup do container. Todo o ciclo do script valida os Decorators e Guards utilizando JWTs formalmente assinados pelo IdP.
+
+3. **Prova da Consistencia Eventual e Topologia:** O grande valor do script e provar a idempotencia e as conexoes sob fluxo continuo:
+   - Conecta-se no Websocket tunelado na porta 8000 (Kong).
+   - Ouve ativamente e valida a cadencia dos 
+ound.snapshots disparados pelo Motor Interno de Ticks do Jogo.
+   - Forja uma aposta (placeBet) via WS passando o Token. Prova que o Request viajou pelo Gateway, engatilhou o Domain de games, lancou a acao para a fila do RabbitMQ e esperou.
+   - Aplica a mesma forca para realizar o cashOut.
+   - Como ato final, apos o "Sleep" que emula o processamento da rede, ele executa um fetch GET /wallets/me para a API. Matematicamente valida se o saldo final no PostgreSQL do microservico Wallets englobou todas as mutacoes financeiras com a precisao e idempotencia prometidas na arquitetura.
